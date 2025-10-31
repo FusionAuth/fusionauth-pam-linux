@@ -1,0 +1,30 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Ubuntu
+  config.vm.box = "utm/ubuntu-24.04"
+
+  # Bump RAM and CPU
+  config.vm.provider "utm" do |vb|
+    vb.check_guest_additions = false
+    vb.cpus = 4
+    vb.memory = "4096"
+  end
+
+  # Enable provisioning with a shell script.
+  # config.vm.provision "file", source: "..", destination: "fusionauth-pam-linux"
+  config.vm.provision "file", source: "sshd", destination: "/tmp/sshd"
+  config.vm.synced_folder "..", "/vagrant/fusionauth-pam-linux"
+
+  # Execute the local install script
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    sudo apt -y update
+    sudo apt -y install gcc make libcurl4-openssl-dev libjson-c-dev libpam0g-dev
+    sudo mv /tmp/sshd /etc/pam.d/sshd
+    cd /vagrant/fusionauth-pam-linux
+    make clean all
+    sudo make uninstall
+    sudo make install
+  SHELL
+end
